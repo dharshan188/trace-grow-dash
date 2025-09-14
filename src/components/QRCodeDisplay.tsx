@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QrCode, Download, Copy, CheckCircle } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 
 interface QRCodeDisplayProps {
   batchId: string;
@@ -19,6 +20,14 @@ export function QRCodeDisplay({
   size = 200,
 }: QRCodeDisplayProps) {
   const [copied, setCopied] = useState(false);
+  const qrCodeRef = useRef<HTMLDivElement>(null);
+
+  const qrValue = JSON.stringify({
+    batchId,
+    farmerName,
+    cropType,
+    location,
+  });
 
   const handleCopy = () => {
     navigator.clipboard.writeText(batchId);
@@ -27,55 +36,29 @@ export function QRCodeDisplay({
   };
 
   const handleDownload = () => {
-    // Mock download functionality
-    const link = document.createElement("a");
-    link.download = `qr-${batchId}.png`;
-    link.href = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
-    link.click();
-  };
-
-  // Generate QR pattern (mock visualization)
-  const generateQRPattern = () => {
-    const pattern = [];
-    for (let i = 0; i < 21; i++) {
-      const row = [];
-      for (let j = 0; j < 21; j++) {
-        // Create a deterministic pattern based on batch ID
-        const hash = (batchId.charCodeAt(0) + i + j) % 3;
-        row.push(hash === 0);
-      }
-      pattern.push(row);
+    const canvas = qrCodeRef.current?.querySelector("canvas");
+    if (canvas) {
+      const link = document.createElement("a");
+      link.download = `qr-${batchId}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
     }
-    return pattern;
   };
-
-  const qrPattern = generateQRPattern();
 
   return (
     <Card className="p-6 text-center hover-lift">
       <div className="flex flex-col items-center space-y-4">
         {/* QR Code Visual */}
-        <div className="relative">
+        <div className="relative" ref={qrCodeRef}>
           <div className="p-4 bg-white rounded-xl shadow-medium border-2 border-accent/20">
-            <div
-              className="grid gap-0.5 bg-white p-2 rounded-lg"
-              style={{
-                gridTemplateColumns: `repeat(21, 1fr)`,
-                width: size,
-                height: size,
-              }}
-            >
-              {qrPattern.map((row, i) =>
-                row.map((cell, j) => (
-                  <div
-                    key={`${i}-${j}`}
-                    className={`aspect-square rounded-[0.5px] ${
-                      cell ? "bg-foreground" : "bg-white"
-                    }`}
-                  />
-                ))
-              )}
-            </div>
+            <QRCodeCanvas
+              value={qrValue}
+              size={size}
+              bgColor={"#ffffff"}
+              fgColor={"#000000"}
+              level={"L"}
+              includeMargin={false}
+            />
           </div>
           {/* Animated scan line overlay */}
           <div className="absolute inset-0 scan-line rounded-xl pointer-events-none" />
