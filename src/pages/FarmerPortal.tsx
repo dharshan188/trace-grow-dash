@@ -39,6 +39,15 @@ export default function FarmerPortal() {
     // Generate batch ID
     const id = `FB-${Date.now().toString(36).toUpperCase()}`;
     setBatchId(id);
+
+    // Save batch data to localStorage
+    const newBatch = {
+      ...formData,
+      batchId: id,
+    };
+    const existingBatches = JSON.parse(localStorage.getItem("farm-batches") || "[]");
+    localStorage.setItem("farm-batches", JSON.stringify([...existingBatches, newBatch]));
+
     setStep("photo");
   };
 

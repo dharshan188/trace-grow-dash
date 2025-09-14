@@ -22,12 +22,7 @@ export function QRCodeDisplay({
   const [copied, setCopied] = useState(false);
   const qrCodeRef = useRef<HTMLDivElement>(null);
 
-  const qrValue = JSON.stringify({
-    batchId,
-    farmerName,
-    cropType,
-    location,
-  });
+  const qrValue = batchId;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(batchId);
