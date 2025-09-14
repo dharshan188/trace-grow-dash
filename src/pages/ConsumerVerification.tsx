@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { TimelineView } from "@/components/TimelineView";
+import { QRCodeScanner } from "@/components/QRCodeScanner";
 import { 
   Scan, 
   Shield, 
@@ -23,9 +24,9 @@ interface ProductInfo {
   batchId: string;
   farmerName: string;
   cropType: string;
-  harvestDate: string;
+  harvestDate?: string;
   location: string;
-  aiGrade: string;
+  aiGrade?: string;
   verified: boolean;
   tampered: boolean;
   priceBreakdown: {
@@ -39,6 +40,7 @@ export default function ConsumerVerification() {
   const [batchId, setBatchId] = useState("");
   const [productInfo, setProductInfo] = useState<ProductInfo | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const mockTimelineEvents = [
     {
@@ -86,32 +88,45 @@ export default function ConsumerVerification() {
     }
   ];
 
-  const handleScan = () => {
-    setIsScanning(true);
-    
-    setTimeout(() => {
+  const handleScanSuccess = (decodedText: string) => {
+    setIsScanning(false);
+    setScanError(null);
+    try {
+      const data = JSON.parse(decodedText);
+      // Here you would typically fetch more data from your backend using the batchId
       setProductInfo({
-        batchId: batchId || "FB-DEMO123",
-        farmerName: "Raj Kumar Singh",
-        cropType: "Organic Tomatoes",
-        harvestDate: "2025-01-08",
-        location: "Green Valley Farm, Karnataka",
-        aiGrade: "Grade A",
+        ...data,
         verified: true,
         tampered: false,
-        priceBreakdown: {
-          farmer: 45,
-          transport: 25,
-          retailer: 30
-        }
+        aiGrade: "Grade A", // Mock data
+        harvestDate: "2025-01-08", // Mock data
+        priceBreakdown: { farmer: 45, transport: 25, retailer: 30 }, // Mock data
       });
-      setIsScanning(false);
-    }, 2000);
+    } catch (error) {
+      setScanError("Invalid QR Code. Please scan a valid product QR code.");
+    }
+  };
+
+  const handleScanFailure = (error: any) => {
+    console.error("QR scan error:", error);
+    setScanError("Failed to scan QR code. Please try again.");
   };
 
   const handleManualEntry = () => {
     if (batchId.trim()) {
-      handleScan();
+      // In a real app, you'd fetch this data. Here we'll simulate it.
+      const mockData = {
+        batchId: batchId,
+        farmerName: "Raj Kumar Singh",
+        cropType: "Organic Tomatoes",
+        location: "Green Valley Farm, Karnataka",
+        verified: true,
+        tampered: false,
+        aiGrade: "Grade A",
+        harvestDate: "2025-01-08",
+        priceBreakdown: { farmer: 45, transport: 25, retailer: 30 },
+      };
+      setProductInfo(mockData);
     }
   };
 
@@ -169,13 +184,29 @@ export default function ConsumerVerification() {
                     )}
                   </div>
 
-                  <Button 
-                    onClick={handleScan}
-                    disabled={isScanning}
-                    className="gradient-primary text-white hover-glow px-8 py-4 text-lg mb-6"
-                  >
-                    {isScanning ? "Scanning..." : "Start Camera Scan"}
-                  </Button>
+                  {!isScanning ? (
+                    <Button
+                      onClick={() => setIsScanning(true)}
+                      className="gradient-primary text-white hover-glow px-8 py-4 text-lg mb-6"
+                    >
+                      Start Camera Scan
+                    </Button>
+                  ) : (
+                    <div className="w-full max-w-sm mx-auto">
+                      <QRCodeScanner
+                        onScanSuccess={handleScanSuccess}
+                        onScanFailure={handleScanFailure}
+                      />
+                      <Button
+                        variant="ghost"
+                        onClick={() => setIsScanning(false)}
+                        className="mt-4"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                  {scanError && <p className="text-red-500 text-sm mt-2">{scanError}</p>}
                 </div>
 
                 {/* Manual Entry */}
@@ -201,6 +232,7 @@ export default function ConsumerVerification() {
                     onClick={handleManualEntry}
                     disabled={!batchId.trim() || isScanning}
                     className="gradient-accent text-accent-foreground"
+                    data-testid="manual-search-button"
                   >
                     <Search className="h-4 w-4" />
                   </Button>

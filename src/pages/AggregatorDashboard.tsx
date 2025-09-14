@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { QRCodeScanner } from "@/components/QRCodeScanner";
 import { 
   Scan, 
   Thermometer, 
@@ -28,6 +28,7 @@ interface ScanResult {
 export default function AggregatorDashboard() {
   const [scannedBatch, setScannedBatch] = useState<ScanResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [weatherData, setWeatherData] = useState({
     temperature: 24,
     humidity: 68,
@@ -53,18 +54,23 @@ export default function AggregatorDashboard() {
     { id: 4, batchId: "FB-JKL012", action: "Weather Log", timestamp: "09:30 AM", status: "completed" },
   ];
 
-  const handleQRScan = () => {
-    setIsScanning(true);
-    // Mock QR scan delay
-    setTimeout(() => {
+  const handleScanSuccess = (decodedText: string) => {
+    setIsScanning(false);
+    setScanError(null);
+    try {
+      const data = JSON.parse(decodedText);
       setScannedBatch({
-        batchId: "FB-" + Math.random().toString(36).substr(2, 8).toUpperCase(),
-        farmerName: "Raj Kumar",
-        cropType: "Organic Tomatoes",
-        status: "verified"
+        ...data,
+        status: "verified",
       });
-      setIsScanning(false);
-    }, 2000);
+    } catch (error) {
+      setScanError("Invalid QR Code. Please scan a valid product QR code.");
+    }
+  };
+
+  const handleScanFailure = (error: any) => {
+    console.error("QR scan error:", error);
+    setScanError("Failed to scan QR code. Please try again.");
   };
 
   const logEvent = (action: string) => {
@@ -121,13 +127,29 @@ export default function AggregatorDashboard() {
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={handleQRScan}
-                    disabled={isScanning}
-                    className="gradient-accent text-accent-foreground hover-glow"
-                  >
-                    {isScanning ? "Scanning..." : "Start QR Scan"}
-                  </Button>
+                  {!isScanning ? (
+                    <Button
+                      onClick={() => setIsScanning(true)}
+                      className="gradient-accent text-accent-foreground hover-glow"
+                    >
+                      Start QR Scan
+                    </Button>
+                  ) : (
+                    <div className="w-full max-w-sm mx-auto">
+                      <QRCodeScanner
+                        onScanSuccess={handleScanSuccess}
+                        onScanFailure={handleScanFailure}
+                      />
+                       <Button
+                        variant="ghost"
+                        onClick={() => setIsScanning(false)}
+                        className="mt-4"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                  {scanError && <p className="text-red-500 text-sm mt-2">{scanError}</p>}
 
                   {/* Scanned Result */}
                   {scannedBatch && (
