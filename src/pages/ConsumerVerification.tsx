@@ -91,19 +91,20 @@ export default function ConsumerVerification() {
   const handleScanSuccess = (decodedText: string) => {
     setIsScanning(false);
     setScanError(null);
-    try {
-      const data = JSON.parse(decodedText);
-      // Here you would typically fetch more data from your backend using the batchId
+    const batchId = decodedText;
+    const existingBatches = JSON.parse(localStorage.getItem("farm-batches") || "[]");
+    const batchData = existingBatches.find((batch: any) => batch.batchId === batchId);
+
+    if (batchData) {
       setProductInfo({
-        ...data,
+        ...batchData,
         verified: true,
         tampered: false,
         aiGrade: "Grade A", // Mock data
-        harvestDate: "2025-01-08", // Mock data
         priceBreakdown: { farmer: 45, transport: 25, retailer: 30 }, // Mock data
       });
-    } catch (error) {
-      setScanError("Invalid QR Code. Please scan a valid product QR code.");
+    } else {
+      setScanError("Batch ID not found. This product may not be genuine.");
     }
   };
 
@@ -114,19 +115,22 @@ export default function ConsumerVerification() {
 
   const handleManualEntry = () => {
     if (batchId.trim()) {
-      // In a real app, you'd fetch this data. Here we'll simulate it.
-      const mockData = {
-        batchId: batchId,
-        farmerName: "Raj Kumar Singh",
-        cropType: "Organic Tomatoes",
-        location: "Green Valley Farm, Karnataka",
-        verified: true,
-        tampered: false,
-        aiGrade: "Grade A",
-        harvestDate: "2025-01-08",
-        priceBreakdown: { farmer: 45, transport: 25, retailer: 30 },
-      };
-      setProductInfo(mockData);
+      const existingBatches = JSON.parse(localStorage.getItem("farm-batches") || "[]");
+      const batchData = existingBatches.find((batch: any) => batch.batchId === batchId);
+
+      if (batchData) {
+        setProductInfo({
+          ...batchData,
+          verified: true,
+          tampered: false,
+          aiGrade: "Grade A", // Mock data
+          priceBreakdown: { farmer: 45, transport: 25, retailer: 30 }, // Mock data
+        });
+        setScanError(null);
+      } else {
+        setScanError("Batch ID not found. This product may not be genuine.");
+        setProductInfo(null);
+      }
     }
   };
 
